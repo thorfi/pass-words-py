@@ -22,6 +22,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # 
+#
+# Python script to generate correct horse battery staple passwords on Unix
+# http://xkcd.com/936/
 
 COPYRIGHT = 'Copyright (c) 2014 David Goh <david@goh.id.au>'
 AUTHOR = 'David Goh <david@goh.id.au> - http://goh.id.au/~david/'
@@ -52,15 +55,87 @@ for p in os.environ['PATH'].split(':'):
         if wp in DEFAULT_WORDS_PATHS: continue
         DEFAULT_WORDS_PATHS.append(wp)
 
-def main():
+def usage_exit(msg):
+    "Exit with a potential error message."
+    exitcode = 0
+    if msg is not None:
+        print >>sys.stderr, "Error:", msg
+        exitcode = 1
+    print >>sys.stderr, "Usage:", sys.argv[0], "[...]"
+    print >>sys.stderr, '''
+Python script to generate correct horse battery staple passwords on Unix
+See http://xkcd.com/936/
+ -c n: count n words in password (Default: %d)
+ -m N: max length of words to use (Default: %d)
+ -n n: min length of words to use (Default: %d)
+ -p /path/to/words: Add this file to look for words in.
+    If none specified, file(s) used: %s
+ -v: verbose print of more common password entropies for comparison
+ -h: print this help
+ ''' % (DEFAULT_WORD_COUNT, DEFAULT_MAX_WORD_LEN, DEFAULT_MIN_WORD_LEN,
+    ':'.join(DEFAULT_WORDS_PATHS), )
+    sys.exit(exitcode)
+    assert False  # should never reach he
 
-    words_paths = DEFAULT_WORDS_PATHS
+def main():
+    words_paths = []
     word_count = DEFAULT_WORD_COUNT
     max_word_len = DEFAULT_MAX_WORD_LEN
     min_word_len = DEFAULT_MIN_WORD_LEN
+    verbose = False
 
-    random = SystemRandom()
-    #random.seed(int(time.time() * 1000) ^ os.getpid())
+    try:
+        opts, remainder_args = getopt.getopt(sys.argv[1:],
+            'p:c:m:n:vh',
+            ['path=', 'count=', 'max=', 'min=', 'verbose', 'help', ])
+    except getopt.GetoptError, exc:
+        usage_exit(str(exc))
+
+
+    for o,a in opts:
+        if o in ('-c', '--count'):
+            try:
+                word_count = int(a)
+            except Exception, exc:
+                usage_exit('--count=%r %s' % (a, str(exc), ))
+        elif o in ('-m', '--max'):
+            try:
+                max_word_len = int(a)
+            except Exception, exc:
+                usage_exit('--max=%r %s' % (a, str(exc), ))
+        elif o in ('-n', '--min'):
+            try:
+                min_word_len = int(a)
+            except Exception, exc:
+                usage_exit('--min=%r %s' % (a, str(exc), ))
+        elif o in ('-p', '--path'):
+            if not os.path.isfile(a):
+                usage_exit('--path=%r is not a file' % (a, ))
+            words_path.append(a)
+        elif o in ('-v', '--verbose'):
+            verbose = True
+        elif o in ('-h', '--help'):
+            usage_exit()
+        else:
+            usage_exit('unknown option %s %r' % (o, a, ))
+
+    entropies = []
+    if verbose:
+        for (desc, text, ) in (
+            ('ASCII lowercase letters', string.ascii_lowercase, ),
+            ('ASCII letters', string.ascii_letters, ),
+            ('ASCII letters or digits', string.letters + string.digits, ),
+            ('ASCII printable non whitespace',
+                ''.join(string.printable.split()), ),
+            ):
+            for n in (8, 10, 16, 20, ):
+                len_text = len(text)
+                entropies.append((len_text ** n,
+                    '%2d*[%d %s]' % ( n, len_text, desc, ), ))
+
+    if not words_paths:
+        words_paths = DEFAULT_WORDS_PATHS
+
     words = set()
     for wp in words_paths:
         wf = open(wp)
@@ -79,27 +154,17 @@ def main():
         return len_words * count_choices(len_words - 1, word_count - 1)
 
     choices = count_choices(len_words, word_count)
-    choices_desc = '%2d/%d words (%d-%d letters) from %s' % (
+    choices_desc = '%2d*[%d words (%d-%d letters) from %s]' % (
         word_count, len_words, min_word_len, max_word_len,
         ':'.join(words_paths), )
-
-    entropies = []
-    ascii_printable_non_whitespace = ''.join(string.printable.split())
-    for (desc, text, ) in (
-        ('ASCII lowercase letters', string.ascii_lowercase, ),
-        ('ASCII letters', string.ascii_letters, ),
-        ('ASCII letters or digits', string.letters + string.digits, ),
-        ('ASCII printable non whitespace', ascii_printable_non_whitespace, ),
-        ):
-        for n in (8, 10, 16, 20, ):
-            len_text = len(text)
-            entropies.append(('%2d/%d %s' % (
-                n, len_text, desc, ), len_text ** n, ))
-
-    entropies.append((choices_desc, choices))
-    for (d, n, ) in entropies:
+    entropies.append((choices, choices_desc, ))
+    if len(entropies) > 1:
+        print 'Bit Entropy comparisons'
+    entropies.sort()
+    for (n, d, ) in entropies:
         print '%5.1f bits - %s' % (math.log(n, 2), d, )
 
+    random = SystemRandom()
     words = random.sample(words, word_count)
     for word in words:
         print word
