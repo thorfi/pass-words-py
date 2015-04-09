@@ -55,7 +55,7 @@ for p in os.environ['PATH'].split(':'):
         if wp in DEFAULT_WORDS_PATHS: continue
         DEFAULT_WORDS_PATHS.append(wp)
 
-def usage_exit(msg):
+def usage_exit(msg=None):
     "Exit with a potential error message."
     exitcode = 0
     if msg is not None:
