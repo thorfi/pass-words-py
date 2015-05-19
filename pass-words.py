@@ -42,7 +42,7 @@ import sys
 DEFAULT_MAX_WORD_LEN = 8
 DEFAULT_MIN_WORD_LEN = 4
 DEFAULT_WORD_COUNT = 5
-DEFAULT_WORD_SEPARATOR = '-'
+DEFAULT_WORD_SEPARATOR = ' '
 
 WORDS_SUBPATHS = ['share/dict/words', 'dict/words', 'share/words', 'words', ]
 DEFAULT_WORDS_PATHS = []
@@ -68,12 +68,13 @@ See http://xkcd.com/936/
  -c n: count n words in password (Default: %d)
  -m N: max length of words to use (Default: %d)
  -n n: min length of words to use (Default: %d)
+ -s s: word separator to use (Default: %r)
  -p /path/to/words: Add this file to look for words in.
     If none specified, file(s) used: %s
  -v: verbose print of more common password entropies for comparison
  -h: print this help
  ''' % (DEFAULT_WORD_COUNT, DEFAULT_MAX_WORD_LEN, DEFAULT_MIN_WORD_LEN,
-    ':'.join(DEFAULT_WORDS_PATHS), )
+    DEFAULT_WORD_SEPARATOR, ':'.join(DEFAULT_WORDS_PATHS), )
     sys.exit(exitcode)
     assert False  # should never reach he
 
@@ -82,12 +83,13 @@ def main():
     word_count = DEFAULT_WORD_COUNT
     max_word_len = DEFAULT_MAX_WORD_LEN
     min_word_len = DEFAULT_MIN_WORD_LEN
+    word_separator = DEFAULT_WORD_SEPARATOR
     verbose = False
 
     try:
         opts, remainder_args = getopt.getopt(sys.argv[1:],
-            'p:c:m:n:vh',
-            ['path=', 'count=', 'max=', 'min=', 'verbose', 'help', ])
+            'p:c:m:n:s:vh',
+            ['path=', 'count=', 'max=', 'min=', 'sep=', 'verbose', 'help', ])
     except getopt.GetoptError, exc:
         usage_exit(str(exc))
 
@@ -112,6 +114,8 @@ def main():
             if not os.path.isfile(a):
                 usage_exit('--path=%r is not a file' % (a, ))
             words_path.append(a)
+        elif o in ('-s', '--sep'):
+            word_separator = a
         elif o in ('-v', '--verbose'):
             verbose = True
         elif o in ('-h', '--help'):
@@ -169,7 +173,7 @@ def main():
     for word in words:
         print word
 
-    print '-'.join(words)
+    print word_separator.join(words)
 
 
 if __name__ == '__main__':
