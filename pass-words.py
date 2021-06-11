@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2014 David Goh <david@goh.id.au>
+# Copyright (c) 2014-2021 David Goh <david@goh.id.au>
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,11 +26,6 @@
 # Python script to generate correct horse battery staple passwords on Unix
 # http://xkcd.com/936/
 
-COPYRIGHT = 'Copyright (c) 2014 David Goh <david@goh.id.au>'
-AUTHOR = 'David Goh <david@goh.id.au> - http://goh.id.au/~david/'
-SOURCE = 'GIT: http://github.com/thorfi/pass-words-py'
-LICENSE = 'MIT License - https://github.com/thorfi/pass-words-py/blob/master/LICENSE'
-
 from random import SystemRandom
 import getopt
 import math
@@ -38,6 +33,11 @@ import os
 import os.path
 import string
 import sys
+
+COPYRIGHT = 'Copyright (c) 2014 David Goh <david@goh.id.au>'
+AUTHOR = 'David Goh <david@goh.id.au> - http://goh.id.au/~david/'
+SOURCE = 'GIT: http://github.com/thorfi/pass-words-py'
+LICENSE = 'MIT License - https://github.com/thorfi/pass-words-py/blob/master/LICENSE'
 
 DEFAULT_MAX_WORD_LEN = 8
 DEFAULT_MIN_WORD_LEN = 4
@@ -58,11 +58,12 @@ for p in os.environ['PATH'].split(':'):
 def usage_exit(msg=None):
     "Exit with a potential error message."
     exitcode = 0
+    f = sys.stderr if msg else sys.stdout
     if msg is not None:
-        print >>sys.stderr, "Error:", msg
+        print("Error:", msg, file=f)
         exitcode = 1
-    print >>sys.stderr, "Usage:", sys.argv[0], "[...]"
-    print >>sys.stderr, '''
+    print("Usage:", sys.argv[0], "[...]", file=f)
+    print('''
 Python script to generate correct horse battery staple passwords on Unix
 See http://xkcd.com/936/
  -c n: count n words in password (Default: %d)
@@ -74,7 +75,7 @@ See http://xkcd.com/936/
  -v: verbose print of more common password entropies for comparison
  -h: print this help
  ''' % (DEFAULT_WORD_COUNT, DEFAULT_MAX_WORD_LEN, DEFAULT_MIN_WORD_LEN,
-    DEFAULT_WORD_SEPARATOR, ':'.join(DEFAULT_WORDS_PATHS), )
+    DEFAULT_WORD_SEPARATOR, ':'.join(DEFAULT_WORDS_PATHS), ), file=f)
     sys.exit(exitcode)
     assert False  # should never reach he
 
@@ -90,7 +91,7 @@ def main():
         opts, remainder_args = getopt.getopt(sys.argv[1:],
             'p:c:m:n:s:vh',
             ['path=', 'count=', 'max=', 'min=', 'sep=', 'verbose', 'help', ])
-    except getopt.GetoptError, exc:
+    except getopt.GetoptError as exc:
         usage_exit(str(exc))
 
 
@@ -98,17 +99,17 @@ def main():
         if o in ('-c', '--count'):
             try:
                 word_count = int(a)
-            except Exception, exc:
+            except ValueError as exc:
                 usage_exit('--count=%r %s' % (a, str(exc), ))
         elif o in ('-m', '--max'):
             try:
                 max_word_len = int(a)
-            except Exception, exc:
+            except ValueError as exc:
                 usage_exit('--max=%r %s' % (a, str(exc), ))
         elif o in ('-n', '--min'):
             try:
                 min_word_len = int(a)
-            except Exception, exc:
+            except ValueError as exc:
                 usage_exit('--min=%r %s' % (a, str(exc), ))
         elif o in ('-p', '--path'):
             if not os.path.isfile(a):
@@ -128,7 +129,7 @@ def main():
         for (desc, text, ) in (
             ('ASCII lowercase letters', string.ascii_lowercase, ),
             ('ASCII letters', string.ascii_letters, ),
-            ('ASCII letters or digits', string.letters + string.digits, ),
+            ('ASCII letters or digits', string.ascii_letters + string.digits, ),
             ('ASCII printable non whitespace',
                 ''.join(string.printable.split()), ),
             ):
@@ -143,12 +144,10 @@ def main():
     words = set()
     for wp in words_paths:
         wf = open(wp)
-        for line in wf.xreadlines():
+        for line in wf:
             l = line.strip().lower()
-            len_l = len(l)
-            if len_l > max_word_len: continue
-            if len_l < min_word_len: continue
-            words.add(l)
+            if min_word_len < len(l) < max_word_len:
+                words.add(l)
         wf.close()
 
     len_words = len(words)
@@ -163,17 +162,17 @@ def main():
         ':'.join(words_paths), )
     entropies.append((choices, choices_desc, ))
     if len(entropies) > 1:
-        print 'Bit Entropy comparisons'
+        print('Bit Entropy comparisons')
     entropies.sort()
     for (n, d, ) in entropies:
-        print '%5.1f bits - %s' % (math.log(n, 2), d, )
+        print('%5.1f bits - %s' % (math.log(n, 2), d, ))
 
     random = SystemRandom()
-    words = random.sample(words, word_count)
+    words = random.sample(list(words), word_count)
     for word in words:
-        print word
+        print(word)
 
-    print word_separator.join(words)
+    print(word_separator.join(words))
 
 
 if __name__ == '__main__':
