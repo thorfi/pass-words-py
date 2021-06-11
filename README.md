@@ -1,4 +1,5 @@
-pass-words-py
-=============
+# pass-words-py
 
-Python script to generate correct horse battery staple passwords on Unix - http://xkcd.com/936/
+Python script that generates correct horse battery staple passwords from Unix dictionaries
+
+See http://xkcd.com/936/
