@@ -172,7 +172,7 @@ def main():
     for wp in words_paths:
         with open(wp) as wf:
             for line in (line.strip().lower() for line in wf):
-                if min_word_len < len(line) < max_word_len:
+                if min_word_len <= len(line) <= max_word_len:
                     words.add(line)
 
     def count_choices(len_w, w_count):
@@ -191,7 +191,8 @@ def main():
         print("Bit Entropy comparisons")
     entropies.sort()
     for n, d in entropies:
-        print(f"{math.log(n, 2):5.1f} bits - {d}")
+        log2 = math.log(n, 2) if n else 0
+        print(f"{log2:5.1f} bits - {d}")
 
     random = SystemRandom()
     words = random.sample(list(words), word_count)
